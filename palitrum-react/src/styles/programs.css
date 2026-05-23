@@ -1,0 +1,372 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&family=Yanone+Kaffeesatz:wght@600&display=swap');
+
+/* === Переменные === */
+:root {
+  --accent: #f6a623;
+  --text-dark: #343434;
+  --text-light: #656565;
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  --radius: 0 0 24px 24px;
+}
+
+.programs-wrapper {
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* === Заголовок === */
+.programs-title {
+  font-size: 50px;
+  font-weight: 500;
+  color: var(--text-dark);
+  text-align: center;
+  font-family: "Yanone Kaffeesatz", sans-serif;
+  margin-bottom: 2rem;
+  line-height: 0.9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* === Пустой текст === */
+.programs-empty {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 15px;
+}
+
+/* === Список карточек === */
+.programs-scroll {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.programs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* === Карточка === */
+.program-card {
+  font-family: "Rubik", sans-serif;
+  min-width: 370px;
+  max-width: 370px;
+  background-color: #fff;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* === Изображение === */
+.program-image {
+  width: 100%;
+  height: 370px;
+  object-fit: cover;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+/* === Контент карточки === */
+.program-content {
+  padding: 24px;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  box-sizing: border-box;
+  align-items: stretch;
+}
+
+/* === Иконка === */
+.program-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: -48px;
+  margin-bottom: 16px;
+}
+
+.program-icon-bg {
+  background: #fff;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  position: relative;
+  z-index: 1;
+}
+
+.program-icon-bg::after {
+  content: '';
+  width: 75px;
+  height: 75px;
+  background: var(--accent);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+}
+
+.program-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+}
+
+/* === Блок текста внутри карточки === */
+.program-text {
+  width: 100%;
+  text-align: left;
+  font-family: "Rubik", sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: calc(1.1em * 2 + 1.3em * 3 + 12px);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* === Название программы === */
+.program-name {
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+/* === Описание программы === */
+.program-desc {
+  font-size: 18px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+/* === Длительность === */
+.program-duration {
+  font-size: 18px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* === Кнопка === */
+.program-btn {
+  width: 100%;
+  padding: 10px 24px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 9999px;
+  font-weight: 400;
+  font-family: "Rubik", sans-serif;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  text-align: center;
+}
+
+.program-btn:hover {
+  opacity: 0.8;
+}
+
+/* === Ссылка "Все программы" === */
+.programs-all {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 18px;
+  color: var(--text-light);
+}
+
+/* ============================================ */
+ /* МОБИЛЬНАЯ ВЕРСИЯ - КОМПАКТНЫЕ КАРТОЧКИ */
+ /* ============================================ */
+
+@media (max-width: 768px) {
+  .programs-wrapper {
+    margin-top: 10px;
+  }
+
+  .programs-title {
+    font-size: 28px;
+    margin-bottom: 1rem;
+  }
+
+  .programs-scroll {
+    gap: 12px;
+  }
+
+  .program-card {
+    min-width: 260px;
+    max-width: 260px;
+    border-radius: 12px;
+  }
+
+  .program-image {
+    height: 150px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+
+  .program-content {
+    padding: 12px;
+    padding-top: 0;
+  }
+
+  .program-icon-wrapper {
+    margin-top: -30px;
+    margin-bottom: 8px;
+  }
+
+  .program-icon-bg {
+    width: 60px;
+    height: 60px;
+  }
+
+  .program-icon-bg::after {
+    width: 45px;
+    height: 45px;
+  }
+
+  .program-icon {
+    width: 25px;
+    height: 25px;
+  }
+
+  .program-text {
+    gap: 2px;
+    margin-bottom: 10px;
+  }
+
+  .program-name {
+    font-size: 18px;
+    -webkit-line-clamp: 2;
+  }
+
+  .program-duration {
+    font-size: 12px;
+  }
+
+  .program-desc {
+    font-size: 11px;
+    -webkit-line-clamp: 2;
+  }
+
+  .program-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Для очень маленьких экранов (iPhone SE и подобные) */
+@media (max-width: 480px) {
+  .programs-wrapper {
+    margin-top: 5px;
+  }
+
+  .programs-title {
+    font-size: 24px;
+    margin-bottom: 0.75rem;
+  }
+
+  .programs-scroll {
+    gap: 10px;
+  }
+
+  .program-card {
+    min-width: 240px;
+    max-width: 240px;
+  }
+
+  .program-image {
+    height: 130px;
+  }
+
+  .program-content {
+    padding: 10px;
+    padding-top: 0;
+  }
+
+  .program-icon-wrapper {
+    margin-top: -25px;
+    margin-bottom: 6px;
+  }
+
+  .program-icon-bg {
+    width: 50px;
+    height: 50px;
+  }
+
+  .program-icon-bg::after {
+    width: 38px;
+    height: 38px;
+  }
+
+  .program-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .program-name {
+    font-size: 16px;
+  }
+
+  .program-duration {
+    font-size: 11px;
+  }
+
+  .program-desc {
+    font-size: 10px;
+  }
+
+  .program-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
+
+/* Для планшетов в портретной ориентации */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .program-card {
+    min-width: 320px;
+    max-width: 320px;
+  }
+
+  .program-image {
+    height: 280px;
+  }
+
+  .program-name {
+    font-size: 28px;
+  }
+
+  .program-duration,
+  .program-desc,
+  .program-btn {
+    font-size: 16px;
+  }
+}

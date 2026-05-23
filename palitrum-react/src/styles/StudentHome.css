@@ -1,0 +1,96 @@
+.student-home-wrapper {
+  display: flex;
+  min-height: 100vh;
+  background: #f4f6f8;
+}
+
+/* Контент */
+.student-home-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Заголовок */
+.student-header {
+  margin-bottom: 28px;
+}
+
+.student-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.student-header p {
+  font-size: 18px;
+  color: #4b5563;
+}
+
+/* Сетка карточек */
+.student-home-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Карточка */
+.card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+/* Широкая карточка (таблица) */
+.card-wide {
+  flex: 1 1 100%;
+}
+
+/* Заголовки карточек */
+.card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1f2937;
+}
+
+/* Текст */
+.card p,
+.card li {
+  font-size: 15px;
+  color: #4b5563;
+}
+
+.card ul {
+  padding-left: 18px;
+}
+
+/* Таблица */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.classes-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.classes-table th,
+.classes-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.classes-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #111827;
+}

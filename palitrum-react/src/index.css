@@ -1,0 +1,374 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&family=Yanone+Kaffeesatz:wght@600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === Переменные === */
+:root {
+  --accent: #f6a623; /* фирменный оранжевый */
+  --text-dark: #343434; /* тёмный — жирные */
+  --text-light: #656565; /* серый — обычные подписи */
+  --shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  --radius: 0 0 24px 24px;
+}
+
+/* Скрытие скроллбара */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+/* Скрыть скролл, но оставить прокрутку */
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE и Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.line-clamp-2-ellipsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
+.line-clamp-3-ellipsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* === Базовые стили === */
+body {
+  font-family: "Rubik", sans-serif;
+  color: var(--text-dark);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Скрыть полосу прокрутки, но оставить возможность прокрутки */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE и Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
+
+
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE и Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
+
+
+/* В ваш глобальный CSS файл (например, index.css или App.css) */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+
+
+/* Для скрытия скроллбара */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Дополнительные стили для мобильной адаптации */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* Улучшенная область касания для мобильных */
+@media (max-width: 768px) {
+  button, 
+  a,
+  [role="button"] {
+    min-height: 44px;
+  }
+}
+
+
+/* Плавный скролл для мобильного меню */
+.mobile-menu-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+/* Фон */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+
+  background-image: url("/bg.png");
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: top center;
+
+  opacity: 0.4; /* ← уровень прозрачности (0.1–0.6) */
+}
+
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Yanone Kaffeesatz", sans-serif;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+/* === Контейнер === */
+.container {
+  @apply max-w-[1340px] mx-auto px-10;
+}
+
+/* Отступ под фиксированный header только для обычных страниц */
+.main-content {
+  padding-top: 150px;
+}
+
+/* === Хедер === */
+header {
+  @apply fixed top-0 left-0 w-full bg-white z-50;
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+}
+
+header .container {
+  @apply flex justify-between items-center py-5;
+}
+
+/* === Тексты === */
+p {
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+/* === Навигация === */
+nav {
+  border-top: 1px solid var(--accent);
+  margin-top: 6px;
+}
+
+nav .container {
+  @apply flex justify-between items-center;
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+nav a {
+  font-size: 13px;
+  line-height: 15px;
+  color: var(--text-light);
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+nav a:hover {
+  color: var(--accent);
+}
+
+/* === Контакты === */
+.header-contact {
+  @apply flex items-center gap-4;
+}
+
+.header-contact-text {
+  @apply flex flex-col justify-center text-right;
+}
+
+.header-contact .icon {
+  background-color: var(--accent);
+  box-shadow: var(--shadow);
+  @apply w-10 h-10 flex items-center justify-center rounded-full text-white flex-shrink-0;
+}
+
+/* === Названия === */
+.text-title {
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 23px;
+  color: var(--text-dark);
+  max-width: 420px;
+}
+
+.text-subtitle {
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 15px;
+  color: var(--text-light);
+  max-width: 420px;
+  margin-top: 8px;
+}
+
+/* === Контакты (адрес, телефон) === */
+.text-address {
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 15px;
+  color: var(--text-light);
+  text-align: center;
+}
+
+.text-phone {
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 23px;
+  color: var(--text-dark);
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Для админки убираем верхний отступ */
+.admin-page {
+  padding-top: 0 !important;
+}
+
+/* === Поиск === */
+.search-box {
+  @apply flex items-center bg-white border border-[var(--accent)] rounded-full px-5;
+  height: 50px;
+  width: 300px;
+}
+
+.search-box input {
+  @apply flex-1 outline-none placeholder-gray-400 text-[13px] leading-[18px];
+  color: var(--text-light);
+}
+
+/* === Hero === */
+.hero-section {
+  position: relative;
+  overflow: visible;
+  padding-bottom: 100px;
+}
+
+/* === Центральная кривая === */
+.hero-orange-curve {
+  position: absolute;
+  background: url("/bg-pattern.svg") no-repeat center/contain;
+  width: 890px;
+  height: 490px;
+  top: 65%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+}
+
+/* === Фото === */
+.hero-photo {
+  position: relative;
+  z-index: 1;
+  transform: rotate(6deg);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* === Правая часть === */
+.hero-right {
+  margin-left: auto;
+  align-items: flex-start;
+  text-align: left;
+  max-width: 340px;
+  position: relative;
+}
+
+.hero-right p {
+  margin-bottom: 0;
+}
+
+.hero-right > div:last-child {
+  margin-top: 8px;
+}
+
+/* === Адаптив === */
+@media (max-width: 768px) {
+  .container {
+    @apply px-4;
+  }
+
+  .text-title,
+  .text-phone {
+    font-size: 22px;
+    line-height: 24px;
+  }
+
+  .search-box {
+    @apply w-[180px] h-[38px];
+  }
+
+  .text-subtitle {
+    margin-top: 4px;
+  }
+}

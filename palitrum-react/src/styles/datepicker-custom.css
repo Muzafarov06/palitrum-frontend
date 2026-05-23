@@ -1,0 +1,74 @@
+/* Основной контейнер календаря */
+.react-datepicker {
+  font-family: 'Rubik', sans-serif;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+  background-color: white;
+  overflow: hidden;
+}
+
+/* Заголовок (месяц/год, кнопки навигации) */
+.react-datepicker__header {
+  background-color: #f6a623;
+  border-bottom: none;
+  padding: 12px 0;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: white;
+  font-weight: 600;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: white;
+}
+
+/* Дни недели */
+.react-datepicker__day-name {
+  font-size: 0.85rem;
+  margin: 0.4rem;
+}
+
+/* Ячейки дней */
+.react-datepicker__day {
+  border-radius: 50%;
+  width: 2.2rem;
+  line-height: 2.2rem;
+  margin: 0.2rem;
+  transition: all 0.2s ease;
+}
+
+.react-datepicker__day:hover {
+  background-color: #f6a62320;
+  border-radius: 50%;
+}
+
+/* Выбранный день */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #f6a623;
+  color: white;
+  font-weight: bold;
+}
+
+.react-datepicker__day--selected:hover {
+  background-color: #ad7822;
+}
+
+/* День вне текущего месяца */
+.react-datepicker__day--outside-month {
+  color: #ccc;
+}
+
+/* Кнопка очистки (clear) – если используется isClearable */
+.react-datepicker__close-icon::after {
+  background-color: #f6a623;
+  font-size: 1rem;
+}
+
+/* Выпадающий список (popper) – сохраняем высокий z-index */
+.react-datepicker-popper {
+  z-index: 40 !important;
+}
