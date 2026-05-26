@@ -167,9 +167,9 @@ export async function smartGenerateSchedule(requestData) {
 
   // ================= DEPARTMENTS =================
 export async function fetchDepartments() {
-  const response = await fetch("http://localhost:8080/api/departments");
+  const response = await API.get("/api/departments");  // ← было fetch("http://localhost:8080/api/departments")
   if (!response.ok) throw new Error("Ошибка загрузки отделений");
-  return response.json();
+  return response.data;
 }
 
 export async function fetchProgramsByDepartmentAdmin(departmentId) {
@@ -237,9 +237,9 @@ export async function fetchProgramsByDepartmentAdmin(departmentId) {
 }
 // ================= PROGRAMS BY DEPARTMENT =================
 export async function fetchProgramsByDepartment(departmentId) {
-  const response = await fetch(`http://localhost:8080/api/programs/by-department/${departmentId}`);
+  const response = await API.get(`/api/programs/by-department/${departmentId}`);  // ← было fetch с localhost
   if (!response.ok) throw new Error("Ошибка загрузки программ отделения");
-  return response.json();
+  return response.data;
 }
 
   export async function fetchProgramDepartmentsByDepartment(departmentId) {
@@ -624,14 +624,14 @@ export async function fetchProgramsByDepartment(departmentId) {
   if (sort) queryParams.append("sort", sort);
 
   // Всегда используем прямой fetch для публичного API
-  const response = await fetch(`http://localhost:8080/api/news?${queryParams.toString()}`);
+  const response = await API.get(`/api/news?${queryParams.toString()}`);
   
   if (!response.ok) {
     console.error("Ошибка загрузки новостей, статус:", response.status);
     throw new Error("Ошибка загрузки новостей");
   }
   
-  const data = await response.json();
+  const data = response.data;
   
   // Если ответ в формате Page (есть content) - возвращаем как есть
   // Если просто массив - оборачиваем в объект для совместимости
@@ -645,14 +645,14 @@ export async function fetchProgramsByDepartment(departmentId) {
 }
 
   export async function fetchPublicRooms() {
-    const response = await fetch("http://localhost:8080/api/rooms/filter?page=0&size=100");
-    if (!response.ok) throw new Error("Ошибка загрузки помещений");
-    const data = await response.json();
-    if (data && Array.isArray(data.content)) {
-      return data.content;
-    }
-    return Array.isArray(data) ? data : [];
+  const response = await API.get("/api/rooms/filter?page=0&size=100");
+  if (!response.ok) throw new Error("Ошибка загрузки помещений");
+  const data = response.data;
+  if (data && Array.isArray(data.content)) {
+    return data.content;
   }
+  return Array.isArray(data) ? data : [];
+}
   
   export async function fetchPublicNews() {
     const response = await API.get("/api/news?size=100");
@@ -757,10 +757,10 @@ export async function fetchProgramsByDepartment(departmentId) {
   }
 
   export async function fetchAllProgramsPublic() {
-    const response = await fetch("http://localhost:8080/api/programs/public");
-    if (!response.ok) throw new Error("Ошибка загрузки программ");
-    return response.json();
-  }
+  const response = await API.get("/api/programs/public");
+  if (!response.ok) throw new Error("Ошибка загрузки программ");
+  return response.data;
+}
 
   // ================= STUDENT JOURNAL / GRADES =================
 export async function fetchStudentGrades(studentId, programId = null) {
