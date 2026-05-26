@@ -7,9 +7,9 @@ import CustomSearchInput from "../../components/common/CustomSearchInput";
 import CustomSelect from "../../components/common/CustomSelect";
 import AddButton from "../../components/common/AddButton";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import PositionFormModal from "../../components/manager/positions/PositionFormModal";
-import PositionTableRow from "../../components/manager/positions/PositionTableRow";
-import PositionCard from "../../components/manager/positions/PositionCard";
+import PositionFormModal from "../../components/manager/Positions/PositionFormModal";
+import PositionTableRow from "../../components/manager/Positions/PositionTableRow";
+import PositionCard from "../../components/manager/Positions/PositionCard";
 import { BadgeCheck, GraduationCap, ChevronLeft, ChevronRight, Download, Upload } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
