@@ -2,9 +2,9 @@
   import { toast } from "react-toastify";
 
   const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
-    withCredentials: true,
-  });
+  baseURL: "https://palitrum-backend.onrender.com", // ← жёстко прописать
+  withCredentials: true,
+});
 
   // Добавляем токен и обрабатываем FormData
   API.interceptors.request.use((config) => {
