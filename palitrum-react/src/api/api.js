@@ -6,14 +6,36 @@ const API = axios.create({
   withCredentials: true,
 });
 
-// Добавляем токен и обрабатываем FormData
+// Создаём отдельный экземпляр для публичных запросов (без токена)
+const publicApi = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
+});
+
+// ========== ФУНКЦИЯ ДЛЯ ПРОВЕРКИ ПУБЛИЧНЫХ ЭНДПОИНТОВ ==========
+const isPublicEndpoint = (url) => {
+  if (!url) return false;
+  const publicPaths = [
+    '/auth/login',
+    '/api/programs/public',
+    '/api/rooms',
+    '/api/news',
+    '/api/settings/public',
+    '/api/files/'
+  ];
+  return publicPaths.some(path => url.includes(path));
+};
+
+// Интерсептор для API (с токеном)
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Пропускаем добавление токена для публичных эндпоинтов
+  if (!isPublicEndpoint(config.url)) {
+    const token = localStorage.getItem("accessToken");
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
 
-  // Для FormData удаляем Content-Type, чтобы браузер сам установил multipart/form-data с правильной границей
+  // Для FormData удаляем Content-Type
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
@@ -21,12 +43,16 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Глобальная обработка 403 (Forbidden)
+// Интерсептор для обработки ошибок
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 403) {
       toast.error("Недостаточно прав для выполнения действия");
+    } else if (error.response?.status === 401 && !isPublicEndpoint(error.config?.url)) {
+      toast.error("Сессия истекла, войдите снова");
+      localStorage.removeItem("accessToken");
+      window.location.href = "/";
     }
     return Promise.reject(error);
   }
@@ -164,7 +190,6 @@ export async function deleteUserRole(id) {
 // ================= DEPARTMENTS =================
 export async function fetchDepartments() {
   const response = await API.get("/api/departments");
-  if (!response.ok) throw new Error("Ошибка загрузки отделений");
   return response.data;
 }
 
@@ -233,7 +258,6 @@ export async function fetchDepartmentsAdmin() {
 // ================= PROGRAMS BY DEPARTMENT =================
 export async function fetchProgramsByDepartment(departmentId) {
   const response = await API.get(`/api/programs/by-department/${departmentId}`);
-  if (!response.ok) throw new Error("Ошибка загрузки программ отделения");
   return response.data;
 }
 
@@ -424,7 +448,7 @@ export async function deleteAllFilesForEntity(entityType, entityId) {
   }
 }
 
-// ================= FILES ADVANCED (фильтрация, статистика) =================
+// ================= FILES ADVANCED =================
 export async function fetchFilteredFiles(entityType, entityId, fileName, page = 0, size = 12) {
   const params = new URLSearchParams();
   if (entityType) params.append("entityType", entityType);
@@ -479,16 +503,6 @@ export async function fetchRoomsStatistics(search = "", type = "") {
   if (type) params.append("type", type);
   const response = await API.get(`/api/rooms/statistics?${params.toString()}`);
   return response.data;
-}
-
-export async function fetchPublicRooms() {
-  const response = await API.get("/api/rooms/filter?page=0&size=100");
-  if (!response.ok) throw new Error("Ошибка загрузки помещений");
-  const data = response.data;
-  if (data && Array.isArray(data.content)) {
-    return data.content;
-  }
-  return Array.isArray(data) ? data : [];
 }
 
 // ================= ACADEMIC PERIODS =================
@@ -575,7 +589,6 @@ export async function fetchSubjectsForProgram(programId) {
   return response.data;
 }
 
-// ================= SCHEDULE TEMPLATES =================
 export async function generateLessons(periodId) {
   const response = await API.post(`/api/schedule-templates/generate?periodId=${periodId}`);
   return response.data;
@@ -618,12 +631,6 @@ export async function fetchNews(params = {}) {
   if (sort) queryParams.append("sort", sort);
 
   const response = await API.get(`/api/news?${queryParams.toString()}`);
-
-  if (!response.ok) {
-    console.error("Ошибка загрузки новостей, статус:", response.status);
-    throw new Error("Ошибка загрузки новостей");
-  }
-
   const data = response.data;
 
   if (data && data.content) {
@@ -633,34 +640,6 @@ export async function fetchNews(params = {}) {
   }
 
   return { content: [], totalElements: 0 };
-}
-
-export async function fetchPublicNews() {
-  const response = await API.get("/api/news?size=100");
-  if (response.data && Array.isArray(response.data.content)) {
-    return response.data.content;
-  }
-  if (Array.isArray(response.data)) {
-    return response.data;
-  }
-  return [];
-}
-
-// ================= NEWS IMPORT/EXPORT =================
-export async function downloadNewsTemplate() {
-  const response = await API.get('/api/import/news/template', {
-    responseType: 'blob'
-  });
-  return response.data;
-}
-
-export async function importNewsExcel(file) {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await API.post('/api/import/news/excel', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
-  return response.data;
 }
 
 export async function fetchNewsStatistics({ search, isPublic, pinned, authorId, startDate, endDate }) {
@@ -717,9 +696,39 @@ export async function fetchParentsByChild(childId) {
   return response.data;
 }
 
-// ================= OTHER =================
+// ================= PUBLIC FUNCTIONS (без токена) =================
+export async function fetchAllProgramsPublic() {
+  const response = await publicApi.get("/api/programs/public");
+  return response.data;
+}
+
+export async function fetchPublicRooms() {
+  const response = await publicApi.get("/api/rooms/filter?page=0&size=100");
+  const data = response.data;
+  if (data && Array.isArray(data.content)) {
+    return data.content;
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+export async function fetchPublicNews() {
+  const response = await publicApi.get("/api/news?size=100");
+  if (response.data && Array.isArray(response.data.content)) {
+    return response.data.content;
+  }
+  if (Array.isArray(response.data)) {
+    return response.data;
+  }
+  return [];
+}
+
+export async function getPublicSettings() {
+  const response = await publicApi.get('/api/settings/public');
+  return response.data;
+}
+
 export async function fetchLocations() {
-  const response = await API.get("/api/rooms");
+  const response = await publicApi.get("/api/rooms");
   if (response.data && Array.isArray(response.data.content)) {
     return response.data.content;
   }
@@ -730,13 +739,7 @@ export async function fetchLocations() {
 }
 
 export async function fetchTeachers() {
-  const response = await API.get("/api/teachers");
-  return response.data;
-}
-
-export async function fetchAllProgramsPublic() {
-  const response = await API.get("/api/programs/public");
-  if (!response.ok) throw new Error("Ошибка загрузки программ");
+  const response = await publicApi.get("/api/teachers");
   return response.data;
 }
 
@@ -748,7 +751,6 @@ export async function fetchStudentGrades(studentId, programId = null) {
   return response.data;
 }
 
-// ================= STUDENT SCHEDULE =================
 export async function fetchStudentLessons(studentId, startDate, endDate) {
   const params = new URLSearchParams();
   params.append("start", startDate);
@@ -758,7 +760,6 @@ export async function fetchStudentLessons(studentId, startDate, endDate) {
   return response.data;
 }
 
-// ================= STUDENT GRADE DETAILS =================
 export async function fetchStudentGradeDetails(studentId, subjectId, periodId = null) {
   const params = new URLSearchParams();
   if (periodId) params.append("periodId", periodId);
@@ -768,7 +769,6 @@ export async function fetchStudentGradeDetails(studentId, subjectId, periodId = 
   return response.data;
 }
 
-// ================= STUDENT PROGRAMS =================
 export async function fetchStudentPrograms(studentId) {
   const response = await API.get(`/api/journal/student/${studentId}/programs`);
   return response.data;
@@ -871,11 +871,6 @@ export async function fetchAllFiles(page = 0, size = 12) {
   const response = await API.get(`/api/files/list`, {
     params: { page, size, sort: "uploadedAt,desc" }
   });
-  return response.data;
-}
-
-export async function getPublicSettings() {
-  const response = await API.get('/api/settings/public');
   return response.data;
 }
 
