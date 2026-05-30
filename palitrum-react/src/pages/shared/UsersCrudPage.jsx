@@ -12,7 +12,8 @@ import {
 import { 
   fetchFilteredUsers, fetchUsersStatistics, createUserRole, fetchRoles,
   fetchUserRoles, deleteUserRole, createUser, updateUser, deleteUser,
-  fetchUserById, fetchUserRelations
+  fetchUserById, fetchUsersByRole, fetchUserRelationsForUser,
+  createUserRelation, deleteUserRelation
 } from '../../api/api';
 import Modal from '../../components/common/Modal';
 import FormModal from '../../components/common/FormModal';
@@ -301,39 +302,117 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm }) => {
   );
 };
 
-// Модалка пользователя с вкладкой "Связи" (без изменений, но она уже содержит кнопки с подсказками)
-const UserFormModal = ({ isOpen, onClose, mode, initialData, onSubmit, defaultRoleId = null, hideRoleSelect = false, rolesList = [], onViewUser, onViewApplication }) => {
+// Модалка пользователя с вкладкой "Связи" (с добавленной кнопкой добавления связи)
+const UserFormModal = ({ isOpen, onClose, mode, initialData, onSubmit, defaultRoleId = null, hideRoleSelect = false, rolesList = [], onViewUser, onViewApplication, canManageRelations = true }) => {
   const [formData, setFormData] = useState({ firstName: '', lastName: '', middleName: '', email: '', phone: '8', password: '', birthDate: null, status: 'ACTIVE', isStaff: false });
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState(null);
   const [activeTab, setActiveTab] = useState(0);
   const [relatedUsers, setRelatedUsers] = useState([]);
   const [loadingRelations, setLoadingRelations] = useState(false);
+  const [showAddRelationForm, setShowAddRelationForm] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedRelationType, setSelectedRelationType] = useState('parent');
+  const [addingRelation, setAddingRelation] = useState(false);
 
   const currentRole = (() => {
     if (mode !== 'edit' || !initialData?.roles?.length) return null;
     return initialData.roles[0];
   })();
   
-  const showRelationsTab = mode === 'edit' && initialData?.id && (currentRole === 'STUDENT' || currentRole === 'PARENT');
+  const showRelationsTab = mode === 'edit' && initialData?.id && (currentRole === 'STUDENT' || currentRole === 'PARENT' || currentRole === 'GUARDIAN');
+
+  // Загрузка текущих связей
+  const loadRelations = useCallback(async () => {
+    if (!isOpen || !showRelationsTab) return;
+    setLoadingRelations(true);
+    try {
+      const relations = await fetchUserRelationsForUser(initialData.id);
+      setRelatedUsers(relations);
+    } catch (err) {
+      console.error('Ошибка загрузки связей:', err);
+      toast.error('Не удалось загрузить связи');
+    } finally {
+      setLoadingRelations(false);
+    }
+  }, [isOpen, showRelationsTab, initialData?.id]);
 
   useEffect(() => {
-    if (!isOpen || !showRelationsTab) return;
-    const loadRelations = async () => {
-      setLoadingRelations(true);
-      try {
-        const relationType = currentRole === 'STUDENT' ? 'parent' : 'child';
-        const relations = await fetchUserRelations(initialData.id, relationType);
-        setRelatedUsers(relations);
-      } catch (err) {
-        console.error('Ошибка загрузки связанных пользователей:', err);
-        toast.error('Не удалось загрузить связи');
-      } finally {
-        setLoadingRelations(false);
+    if (isOpen && showRelationsTab) {
+      loadRelations();
+    }
+  }, [isOpen, showRelationsTab, loadRelations]);
+
+  // Загрузка доступных для связи пользователей
+  const loadAvailableUsers = useCallback(async () => {
+    if (!initialData?.id) return;
+    try {
+      let usersList = [];
+      if (currentRole === 'STUDENT') {
+        // Студент может быть связан с родителями или опекунами
+        const parents = await fetchUsersByRole('PARENT');
+        const guardians = await fetchUsersByRole('GUARDIAN');
+        usersList = [...parents, ...guardians];
+      } else if (currentRole === 'PARENT' || currentRole === 'GUARDIAN') {
+        // Родитель/опекун может быть связан со студентами
+        usersList = await fetchUsersByRole('STUDENT');
       }
-    };
-    loadRelations();
-  }, [isOpen, showRelationsTab, initialData?.id, currentRole]);
+      // Исключаем уже связанных
+      const existingIds = relatedUsers.map(r => currentRole === 'STUDENT' ? r.parentUserId : r.childUserId);
+      const available = usersList.filter(u => !existingIds.includes(u.id));
+      setAvailableUsers(available);
+    } catch (err) {
+      console.error('Ошибка загрузки доступных пользователей:', err);
+      toast.error('Не удалось загрузить доступных пользователей');
+    }
+  }, [initialData?.id, currentRole, relatedUsers]);
+
+  useEffect(() => {
+    if (showAddRelationForm) {
+      loadAvailableUsers();
+    } else {
+      setSelectedUserId('');
+      setSelectedRelationType('parent');
+    }
+  }, [showAddRelationForm, loadAvailableUsers]);
+
+  // Добавление связи
+  const handleAddRelation = async () => {
+    if (!selectedUserId) {
+      toast.warn('Выберите пользователя');
+      return;
+    }
+    setAddingRelation(true);
+    try {
+      const payload = {
+        parentUserId: currentRole === 'STUDENT' ? Number(selectedUserId) : initialData.id,
+        childUserId: currentRole === 'STUDENT' ? initialData.id : Number(selectedUserId),
+        relationType: selectedRelationType,
+        verified: true
+      };
+      await createUserRelation(payload);
+      toast.success('Связь добавлена');
+      setShowAddRelationForm(false);
+      await loadRelations();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка добавления связи');
+    } finally {
+      setAddingRelation(false);
+    }
+  };
+
+  // Удаление связи
+  const handleDeleteRelation = async (relationId) => {
+    if (!window.confirm('Удалить связь?')) return;
+    try {
+      await deleteUserRelation(relationId);
+      toast.success('Связь удалена');
+      await loadRelations();
+    } catch (err) {
+      toast.error('Ошибка удаления связи');
+    }
+  };
 
   const parseBirthDate = (dateValue) => {
     if (!dateValue) return null;
@@ -366,6 +445,7 @@ const UserFormModal = ({ isOpen, onClose, mode, initialData, onSubmit, defaultRo
       setSelectedRoleId(defaultRoleId);
     }
     setActiveTab(0);
+    setShowAddRelationForm(false);
   }, [isOpen, mode, initialData, defaultRoleId, rolesList]);
 
   const handlePhoneChange = createPhoneChangeHandler(setFormData);
@@ -413,32 +493,108 @@ const UserFormModal = ({ isOpen, onClose, mode, initialData, onSubmit, defaultRo
 
   const renderRelationsTab = () => {
     if (!showRelationsTab) return null;
-    if (loadingRelations) return <div className="text-center py-4 text-gray-500">Загрузка...</div>;
-    if (relatedUsers.length === 0) return <div className="text-center py-4 text-gray-500">Нет связанных пользователей</div>;
-    const relationLabel = currentRole === 'STUDENT' ? 'Родители' : 'Дети';
+    const isStudent = currentRole === 'STUDENT';
+    const relationLabel = isStudent ? 'Родители и опекуны' : 'Ученики';
     return (
-      <div className="space-y-3">
-        <div className="text-sm font-medium text-gray-700">Связанные пользователи ({relationLabel.toLowerCase()}):</div>
-        {relatedUsers.map(user => (
-          <div
-            key={user.id}
-            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition"
-            onClick={() => onViewUser && onViewUser(user.id)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#f6a623]/10 flex items-center justify-center">
-                <Users size={14} className="text-[#f6a623]" />
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">
-                  {user.lastName} {user.firstName} {user.middleName || ''}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="text-sm font-medium text-gray-700">Связанные пользователи ({relationLabel}):</div>
+          {canManageRelations && (
+            <button
+              onClick={() => setShowAddRelationForm(true)}
+              className="flex items-center gap-1 px-2 py-1 bg-[#f6a623] text-white text-xs rounded-lg hover:bg-[#e09515] transition"
+              title="Добавить связь"
+            >
+              <Plus size={14} /> Добавить связь
+            </button>
+          )}
+        </div>
+
+        {loadingRelations ? (
+          <div className="text-center py-4 text-gray-500">Загрузка...</div>
+        ) : relatedUsers.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">Нет связанных пользователей</div>
+        ) : (
+          <div className="space-y-2">
+            {relatedUsers.map(user => {
+              const displayName = isStudent ? user.parentFullName : user.childFullName;
+              const relationTypeRu = user.relationType === 'parent' ? 'Родитель' : user.relationType === 'guardian' ? 'Опекун' : user.relationType;
+              return (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                  onClick={() => onViewUser && onViewUser(isStudent ? user.parentUserId : user.childUserId)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#f6a623]/10 flex items-center justify-center">
+                      <Users size={14} className="text-[#f6a623]" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">{displayName}</div>
+                      <div className="text-xs text-gray-500">
+                        {relationTypeRu} • верифицирована: {user.verified ? 'да' : 'нет'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    {canManageRelations && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteRelation(user.id); }}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        title="Удалить связь"
+                      >
+                        <Trash size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">{user.email}</div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Форма добавления связи */}
+        {showAddRelationForm && (
+          <div className="mt-4 p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+            <div className="text-sm font-medium text-gray-700 mb-3">Добавление связи</div>
+            <div className="space-y-3">
+              <CustomSelect
+                value={selectedUserId}
+                onChange={(val) => setSelectedUserId(val)}
+                options={availableUsers.map(u => ({ value: String(u.id), label: `${u.lastName} ${u.firstName} (${u.email})` }))}
+                placeholder="Выберите пользователя"
+                label="Пользователь"
+                clearable
+              />
+              <CustomSelect
+                value={selectedRelationType}
+                onChange={(val) => setSelectedRelationType(val)}
+                options={[
+                  { value: 'parent', label: 'Родитель' },
+                  { value: 'guardian', label: 'Опекун' }
+                ]}
+                label="Тип связи"
+                clearable={false}
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowAddRelationForm(false)}
+                  className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-100"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={handleAddRelation}
+                  disabled={addingRelation || !selectedUserId}
+                  className="px-3 py-1.5 bg-[#f6a623] text-white rounded-lg text-sm hover:bg-[#e09515] disabled:opacity-50"
+                >
+                  {addingRelation ? <Loader2 className="animate-spin" size={14} /> : 'Добавить'}
+                </button>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
           </div>
-        ))}
+        )}
       </div>
     );
   };
@@ -559,6 +715,10 @@ export default function UsersCrudPage({ roleFilter = null }) {
   const [viewingUser, setViewingUser] = useState(null);
   const defaultRoleId = roleFilter ? roles.find(r => r.name === roleFilter)?.id : null;
 
+  // Права (предполагаем, что есть контекст или просто для демо – true)
+  // В реальном проекте используйте useAuth
+  const hasPermission = (perm) => true; // Замените на реальную проверку
+
   useEffect(() => { fetchUsersStatistics().then(setStats).catch(console.error); }, []);
   useEffect(() => { fetchRoles().then(setRoles).catch(console.error); }, []);
 
@@ -625,7 +785,6 @@ export default function UsersCrudPage({ roleFilter = null }) {
     fetchUsersStatistics().then(setStats);
   };
 
-  // Функция скачивания шаблона для импорта пользователей
   const downloadTemplate = async () => {
     try {
       const response = await API.get('/api/import/users/template', { responseType: 'blob' });
@@ -710,9 +869,9 @@ export default function UsersCrudPage({ roleFilter = null }) {
 
       {totalPages > 0 && <div className="flex-shrink-0 p-2 sm:p-6 bg-gray-50 border-t"><UsersPagination page={page} totalPages={totalPages} setPage={setPage} size={size} setSize={setSize} totalElements={totalElements} usersCount={users.length} /></div>}
 
-      <UserFormModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} mode="create" onSubmit={handleAddSubmit} defaultRoleId={defaultRoleId} hideRoleSelect={roleFilter !== null} rolesList={roles} onViewUser={handleViewUser} />
-      <UserFormModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditingUser(null); }} mode="edit" initialData={editingUser} onSubmit={handleEditSubmit} rolesList={roles} hideRoleSelect={roleFilter !== null} onViewUser={handleViewUser} />
-      <UserFormModal isOpen={viewUserModalOpen} onClose={handleCloseViewModal} mode="edit" initialData={viewingUser} onSubmit={handleUpdateViewUser} rolesList={roles} hideRoleSelect={roleFilter !== null} onViewUser={handleViewUser} />
+      <UserFormModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} mode="create" onSubmit={handleAddSubmit} defaultRoleId={defaultRoleId} hideRoleSelect={roleFilter !== null} rolesList={roles} onViewUser={handleViewUser} canManageRelations={hasPermission("user.update")} />
+      <UserFormModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setEditingUser(null); }} mode="edit" initialData={editingUser} onSubmit={handleEditSubmit} rolesList={roles} hideRoleSelect={roleFilter !== null} onViewUser={handleViewUser} canManageRelations={hasPermission("user.update")} />
+      <UserFormModal isOpen={viewUserModalOpen} onClose={handleCloseViewModal} mode="edit" initialData={viewingUser} onSubmit={handleUpdateViewUser} rolesList={roles} hideRoleSelect={roleFilter !== null} onViewUser={handleViewUser} canManageRelations={hasPermission("user.update")} />
       <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} onConfirm={confirmDelete} />
       <ToastContainer position="top-right" autoClose={3000} />
       

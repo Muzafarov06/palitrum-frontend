@@ -22,7 +22,6 @@ import ProgramsGrid from "./components/ProgramsGrid";
 
 import LocationsGrid from "./components/LocationsGrid";
 import EventsGrid from "./components/EventsGrid";
-import Teachers from "./components/Teachers";
 import FAQ from "./components/FAQ";
 import ManagerNewsPage from "./pages/manager/NewsPage";   // тот самый компонент, который мы написали
 import Testimonials from "./components/Testimonials";
@@ -165,13 +164,7 @@ const isStudentPage = location.pathname.startsWith("/student");
       .finally(() => setLoadingPrograms(false));
 
     setLoadingTeachers(true);
-    fetchTeachers()
-      .then((data) => setTeachers(Array.isArray(data) ? data : []))
-      .catch((err) => {
-        console.warn("Учителя недоступны без авторизации:", err);
-        setTeachers([]); // или оставить пустым
-      })
-      .finally(() => setLoadingTeachers(false));
+    
 
     setLoadingLocations(true);
     fetchPublicRooms()
@@ -449,16 +442,7 @@ fetchNews({ size: 100 })
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/teachers"
-          element={
-            <ProtectedRoute roles={["SUPER_ADMIN","MANAGER","DIRECTOR"]}>
-              <AdminLayout>
-                <TeachersPage />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
+        
 
         {/* Заявки – доступно менеджерам и админам */}
         <Route

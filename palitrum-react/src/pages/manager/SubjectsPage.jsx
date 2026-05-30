@@ -83,6 +83,7 @@ export default function SubjectsPage() {
       }
       toast.success("Предмет создан");
       await loadSubjects();
+      return newSubject;   // <--- обязательно
     } catch (err) {
       toast.error("Ошибка создания");
       throw err;
@@ -102,7 +103,7 @@ export default function SubjectsPage() {
       }
       toast.success("Предмет обновлён");
       await loadSubjects();
-      return updated;
+      return updated;   // <--- обязательно
     } catch (err) {
       toast.error("Ошибка обновления");
       throw err;

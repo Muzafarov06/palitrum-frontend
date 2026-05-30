@@ -158,17 +158,19 @@ export default function DepartmentsPage() {
       throw new Error("Глубина вложенности превышена");
     }
     try {
+      let savedDepartment;
       if (deptFormModal.editing) {
-        await updateDepartment(deptFormModal.editing.id, { ...data, parentId: deptFormModal.editing.parentId });
+        savedDepartment = await updateDepartment(deptFormModal.editing.id, { ...data, parentId: deptFormModal.editing.parentId });
         toast.success("Отделение обновлено");
       } else {
-        await createDepartment({ ...data, parentId });
+        savedDepartment = await createDepartment({ ...data, parentId });
         toast.success("Отделение добавлено");
       }
       await loadDepartments();
+      return savedDepartment;   // ✅ ВАЖНО: возвращаем объект
     } catch (error) {
       console.error(error);
-      toast.error("Ошибка сохранения отделения");
+      toast.error(error.response?.data?.message || "Ошибка сохранения отделения");
       throw error;
     }
   };

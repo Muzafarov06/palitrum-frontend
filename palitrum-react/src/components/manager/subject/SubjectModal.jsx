@@ -12,6 +12,18 @@ const LESSON_TYPE_OPTIONS = [
   { value: 'INDIVIDUAL', label: 'Индивидуальное' },
 ];
 
+// Простая транслитерация кириллицы в латиницу
+const transliterate = (text) => {
+  if (!text) return '';
+  const map = {
+    'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh',
+    'з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o',
+    'п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts',
+    'ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'
+  };
+  return text.toLowerCase().split('').map(ch => map[ch] || ch).join('').replace(/[^a-z0-9]/g, '_').toUpperCase();
+};
+
 export default function SubjectModal({ isOpen, onClose, onSubmit, initialData = null }) {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -26,29 +38,28 @@ export default function SubjectModal({ isOpen, onClose, onSubmit, initialData = 
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  // Полная синхронизация формы с initialData при каждом открытии
   useEffect(() => {
     if (!isOpen) return;
     if (initialData?.id) {
       setCode(initialData.code || '');
       setName(initialData.name || '');
       setDescription(initialData.description || '');
-      setStandardHoursPerWeek(initialData.standardHoursPerWeek || '');
+      setStandardHoursPerWeek(initialData.standardHoursPerWeek !== undefined ? String(initialData.standardHoursPerWeek) : '');
       setLessonType(initialData.lessonType || 'GROUP');
-      setMinGroupSize(initialData.minGroupSize || '');
-      setMaxGroupSize(initialData.maxGroupSize || '');
+      setMinGroupSize(initialData.minGroupSize !== undefined ? String(initialData.minGroupSize) : '');
+      setMaxGroupSize(initialData.maxGroupSize !== undefined ? String(initialData.maxGroupSize) : '');
       loadExistingImage(initialData.id);
     } else {
       resetForm();
     }
   }, [isOpen, initialData]);
 
-  // При изменении типа занятий автоматически устанавливаем размеры группы
   useEffect(() => {
     if (lessonType === 'INDIVIDUAL') {
       setMinGroupSize('1');
       setMaxGroupSize('1');
     } else if (lessonType === 'GROUP') {
-      // Если поля пустые, оставляем пустыми (пользователь введёт сам)
       if (!minGroupSize) setMinGroupSize('');
       if (!maxGroupSize) setMaxGroupSize('');
     }
@@ -113,7 +124,6 @@ export default function SubjectModal({ isOpen, onClose, onSubmit, initialData = 
       setExistingFileId(null);
       setImagePreview(null);
       toast.success('Изображение удалено');
-      onClose();
     } catch (err) {
       console.error(err);
       toast.error('Ошибка удаления изображения');
@@ -122,57 +132,76 @@ export default function SubjectModal({ isOpen, onClose, onSubmit, initialData = 
     }
   };
 
-  // Фильтр для полей размера группы: только цифры
   const handleNumberInput = (setter) => (e) => {
     const rawValue = e.target.value;
-    // Убираем всё, кроме цифр
     const numericValue = rawValue.replace(/[^0-9]/g, '');
     setter(numericValue);
   };
 
+  const ensureCode = (subjectName, userCode) => {
+    if (userCode && userCode.trim()) return userCode.trim();
+    if (subjectName && subjectName.trim()) return transliterate(subjectName.trim());
+    return null;
+  };
+
   const handleSubmit = async () => {
-    if (!name.trim()) {
+    // Определяем финальное имя (сначала из state, потом из initialData)
+    let finalName = name?.trim();
+    if (!finalName && initialData?.name) {
+      finalName = initialData.name.trim();
+      // обновляем state, чтобы отобразить пользователю
+      setName(finalName);
+    }
+    if (!finalName) {
       toast.error('Название предмета обязательно');
       return;
     }
+
+    let finalCode = code?.trim();
+    if (!finalCode && initialData?.code) {
+      finalCode = initialData.code.trim();
+      setCode(finalCode);
+    }
+    if (!finalCode) {
+      finalCode = ensureCode(finalName, '');
+      if (!finalCode) {
+        toast.error('Не удалось сформировать код предмета. Укажите код вручную.');
+        return;
+      }
+    }
+
+    // Формируем объект для отправки
     const subjectData = {
-      code: code.trim() || null,
-      name: name.trim(),
-      description: description.trim() || null,
+      code: finalCode,
+      name: finalName,
+      description: description?.trim() || null,
       standardHoursPerWeek: standardHoursPerWeek ? Number(standardHoursPerWeek) : 0,
       lessonType: lessonType,
       minGroupSize: lessonType === 'INDIVIDUAL' ? 1 : (minGroupSize ? Number(minGroupSize) : null),
       maxGroupSize: lessonType === 'INDIVIDUAL' ? 1 : (maxGroupSize ? Number(maxGroupSize) : null),
     };
+
+    // Логирование для отладки – убедимся, что данные не пустые
+    console.log('Отправка данных:', subjectData);
+
     setUploading(true);
     try {
-      let savedSubject;
-      if (initialData?.id) {
-        savedSubject = await onSubmit(subjectData);
-      } else {
-        savedSubject = await onSubmit(subjectData);
+      const savedSubject = await onSubmit(subjectData);
+      if (!savedSubject || !savedSubject.id) {
+        throw new Error('Сервер не вернул данные сохранённого предмета');
       }
 
       if (imageFile) {
-        if (existingFileId) {
-          await deleteFile(existingFileId);
-        }
-        const formData = new FormData();
-        formData.append('files', imageFile);
-        const uploadResponse = await uploadFiles(savedSubject.id, 'SUBJECT', formData);
-        const uploadedFile = uploadResponse?.[0];
-        if (uploadedFile?.fileUrl) {
-          await updateSubject(savedSubject.id, { imageUrl: uploadedFile.fileUrl });
-          savedSubject.imageUrl = uploadedFile.fileUrl;
-        }
-        toast.success('Изображение загружено');
+          if (existingFileId) await deleteFile(existingFileId);
+          await uploadFiles(savedSubject.id, 'SUBJECT', [imageFile]);
+          toast.success('Изображение загружено');
       }
 
       toast.success(initialData ? 'Предмет обновлён' : 'Предмет создан');
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Ошибка сохранения предмета');
+      toast.error(err.message || 'Ошибка сохранения предмета');
     } finally {
       setUploading(false);
     }
@@ -185,7 +214,7 @@ export default function SubjectModal({ isOpen, onClose, onSubmit, initialData = 
   return (
     <FormModal title={initialData ? 'Редактировать предмет' : 'Новый предмет'} onClose={onClose}>
       <div className="p-6 pt-4 space-y-4">
-        <CustomInput label="Код предмета" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Например, PIANO101" />
+        <CustomInput label="Код предмета" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Оставьте пустым для автогенерации" />
         <CustomInput label="Название" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Название предмета" />
         <CustomTextarea label="Описание" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Описание (необязательно)" rows={3} />
         <CustomInput label="Часов в неделю (базово)" type="number" value={standardHoursPerWeek} onChange={(e) => setStandardHoursPerWeek(e.target.value)} placeholder="0" />
@@ -198,11 +227,10 @@ export default function SubjectModal({ isOpen, onClose, onSubmit, initialData = 
             options={LESSON_TYPE_OPTIONS}
             required
           />
-          {/* Поля размера группы – обычные input с типом number и фильтрацией */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Мин. размер группы</label>
             <input
-              type="text"  // используем text, но фильтруем ввод только цифр
+              type="text"
               value={minGroupSize}
               onChange={handleNumberInput(setMinGroupSize)}
               placeholder={isGroup ? "4" : "1"}
